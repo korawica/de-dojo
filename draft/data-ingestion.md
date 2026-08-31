@@ -29,14 +29,14 @@ classifies columns according to PCI DSS, PDPA, and GDPR scope.
 Every table in Bronze and above carries a `_dp_audit` STRUCT column. The field names differ
 depending on whether the flow produces a first-insert (1-to-1) or an upsert (1-to-many) record.
 
-| Flow Type | Field | Value |
-| --- | --- | --- |
-| **1-to-1 (insert-only)** | `loaded_at TIMESTAMP` | Pipeline start time at first insert |
-| | `loaded_by STRING` | Pipeline run ID at first insert |
-| | `loaded_from STRING` | Source file path or stream identifier |
-| **1-to-many (upsert)** | `updated_at TIMESTAMP` | Pipeline start time at the update operation |
-| | `updated_by STRING` | Pipeline run ID at the update operation |
-| | `updated_from STRING` | Source file path or stream identifier at update |
+| Flow Type                | Field                  | Value                                           |
+|--------------------------|------------------------|-------------------------------------------------|
+| **1-to-1 (insert-only)** | `loaded_at TIMESTAMP`  | Pipeline start time at first insert             |
+|                          | `loaded_by STRING`     | Pipeline run ID at first insert                 |
+|                          | `loaded_from STRING`   | Source file path or stream identifier           |
+| **1-to-many (upsert)**   | `updated_at TIMESTAMP` | Pipeline start time at the update operation     |
+|                          | `updated_by STRING`    | Pipeline run ID at the update operation         |
+|                          | `updated_from STRING`  | Source file path or stream identifier at update |
 
 Use `loaded_*` for append-only data models (transactions, CDC). Use `updated_*` wherever the
 pipeline issues a MERGE and a record's non-key fields can change after the first write.
@@ -45,9 +45,9 @@ pipeline issues a MERGE and a record's non-key fields can change after the first
 
 These are **two separate columns** that exist in every Bronze and Silver table:
 
-| Column | Value | Purpose |
-| --- | --- | --- |
-| `dp_partition` | ETL pipeline start time | Physical partition key — used only for partition pruning |
+| Column            | Value                      | Purpose                                                                     |
+|-------------------|----------------------------|-----------------------------------------------------------------------------|
+| `dp_partition`    | ETL pipeline start time    | Physical partition key — used only for partition pruning                    |
 | `event_timestamp` | Original source event time | Business time — used in all downstream filters, aggregations, and SCD logic |
 
 **Late-arriving data always writes to the current ETL partition** (`dp_partition`), regardless of
