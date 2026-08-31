@@ -538,14 +538,14 @@ is granted to end users.
 
 Quick reference for which storage system(s) each zone uses:
 
-| Zone           | Cloud Storage (GCS)                  | BigQuery                                      |
-|----------------|--------------------------------------|-----------------------------------------------|
-| **Raw**        | ✅ Primary (structured + media files) | ✅ BigLake external tables (Lambda hot layer)  |
-| **Bronze**     | ✅ Iceberg open table format          | ✅ BigLake external tables over Iceberg        |
-| **Silver**     | ✅ Iceberg open table format          | ✅ BigLake external tables over Iceberg        |
-| **Gold**       | —                                    | ✅ Native tables, materialized views, views    |
-| **Staging**    | —                                    | ✅ Native tables (short-lived)                 |
-| **Quarantine** | ✅ Iceberg open table format          | ✅ BigLake external tables over Iceberg        |
-| **Shared**     | ✅ Media Store (unstructured only)    | ✅ Cloned tables, authorized views             |
-| **Access**     | —                                    | ✅ Authorized views only                       |
+| Zone           | Cloud Storage (GCS)                   | BigQuery                                      |
+|----------------|---------------------------------------|-----------------------------------------------|
+| **Raw**        | ✅ Primary (structured + media files) | ✅ BigLake external tables (Lambda hot layer) |
+| **Bronze**     | ✅ Iceberg open table format          | ✅ BigLake external tables over Iceberg       |
+| **Silver**     | ✅ Iceberg open table format          | ✅ BigLake external tables over Iceberg       |
+| **Gold**       | —                                     | ✅ Native tables, materialized views, views   |
+| **Staging**    | —                                     | ✅ Native tables (short-lived)                |
+| **Quarantine** | ✅ Iceberg open table format          | ✅ BigLake external tables over Iceberg       |
+| **Shared**     | ✅ Media Store (unstructured only)    | ✅ Cloned tables, authorized views            |
+| **Access**     | —                                     | ✅ Authorized views only                      |
 

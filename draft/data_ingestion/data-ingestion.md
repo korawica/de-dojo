@@ -235,10 +235,10 @@ These flows describe how data enters the platform from an external source.
 Raw zone ingestion is fully automated and managed by the **source system or sink service**.
 The DE team does not operate these pipelines.
 
-| Source Type | Cloud Storage Path | BigQuery Table |
-| --- | --- | --- |
+| Source Type         | Cloud Storage Path                                                                        | BigQuery Table                                             |
+|---------------------|-------------------------------------------------------------------------------------------|------------------------------------------------------------|
 | **Kafka / Pub/Sub** | `{topic}/year={yyyy}/month={mm}/day={dd}/hour={hh}/{topic}-{partition}-{offset}.jsonl.gz` | `{topic}(value JSON, timestamp TIMESTAMP, offset INTEGER)` |
-| **Job Schedule** | `{source}/year={yyyy}/month={mm}/day={dd}/{source}-{round}-{timestamp}.csv` | `{source}(value JSON, timestamp TIMESTAMP, round INTEGER)` |
+| **Job Schedule**    | `{source}/year={yyyy}/month={mm}/day={dd}/{source}-{round}-{timestamp}.csv`               | `{source}(value JSON, timestamp TIMESTAMP, round INTEGER)` |
 
 No transformation is applied. Data lands exactly as received.
 
@@ -264,10 +264,10 @@ deduplication, flattening, audit column, schema checks, and partition strategy.
 Used for trusted cross-domain sources that do not need a DE-managed pipeline.
 The Shared object is registered as `shared.{object_source_name}`.
 
-| Object Type | Naming | When to Use |
-| --- | --- | --- |
-| **BigQuery Clone** | `cln_{source}` | Source owner does not want to manage access control on their side |
-| **Authorized View** | `vw_{source}` | Source owner wants to retain access control on their side |
+| Object Type         | Naming         | When to Use                                                       |
+|---------------------|----------------|-------------------------------------------------------------------|
+| **BigQuery Clone**  | `cln_{source}` | Source owner does not want to manage access control on their side |
+| **Authorized View** | `vw_{source}`  | Source owner wants to retain access control on their side         |
 
 ---
 
@@ -281,10 +281,10 @@ rather than publishing to Kafka / Pub/Sub.
 
 **Two sub-patterns:**
 
-| Sub-pattern | Trigger | Landing Path |
-| --- | --- | --- |
-| **Polling (pull)** | Scheduled Cloud Run Job (Airflow-triggered) | `{source}/year={yyyy}/month={mm}/day={dd}/{source}-{timestamp}-{uuid}.jsonl.gz` |
-| **Webhook (push)** | HTTP POST from source system to Cloud Run service | `{source}/year={yyyy}/month={mm}/day={dd}/{source}-{event_id}.jsonl.gz` |
+| Sub-pattern        | Trigger                                           | Landing Path                                                                    |
+|--------------------|---------------------------------------------------|---------------------------------------------------------------------------------|
+| **Polling (pull)** | Scheduled Cloud Run Job (Airflow-triggered)       | `{source}/year={yyyy}/month={mm}/day={dd}/{source}-{timestamp}-{uuid}.jsonl.gz` |
+| **Webhook (push)** | HTTP POST from source system to Cloud Run service | `{source}/year={yyyy}/month={mm}/day={dd}/{source}-{event_id}.jsonl.gz`         |
 
 **Polling pattern steps:**
 
@@ -310,10 +310,10 @@ rather than publishing to Kafka / Pub/Sub.
 
 **`source_id` for API sources:**
 
-| Sub-pattern | `source_id` Value |
-| --- | --- |
-| Polling | `{source}-{api_cursor_value}` — the unique page/batch identifier returned by the API |
-| Webhook | `{source}-{webhook_event_id}` — the event ID extracted from the payload envelope |
+| Sub-pattern   | `source_id` Value                                                                    |
+|---------------|--------------------------------------------------------------------------------------|
+| Polling       | `{source}-{api_cursor_value}` — the unique page/batch identifier returned by the API |
+| Webhook       | `{source}-{webhook_event_id}` — the event ID extracted from the payload envelope     |
 
 > Never use `last_ingested_at` timestamps as `source_id` — clock skew between caller and
 > receiver can cause two API responses at the "same" timestamp to collide. Always use an
@@ -580,19 +580,19 @@ All column renames, business-key deduplication, and data model shaping happen he
 
 **Data Models:**
 
-| Model | Silver Prefix | Write Mode | Partition Strategy | Notes |
-| --- | --- | --- | --- | --- |
-| **Pure Transaction** (no mutable fields) | `txn_` | Upsert by transaction ID | `hours(created_at)` or `hours(last_modified_date)` | Records are immutable once written |
-| **Transaction with Update Key** | `txn_` | Upsert by transaction ID + `updated_at` / `last_modified_date` | `hours(created_at)` | Use update timestamp to resolve latest version |
-| **Master Data** | `mst_` | Upsert by entity key | None required | Flat current-state table |
-| **Master Data (SCD2)** | `mst_{name}_scd2` | SCD2 via hash of concatenated attribute columns | `days(valid_from)` | Carries `valid_from`, `valid_to`, `is_current`; see SCD2 trigger rules below |
-| **State Data** | `stt_` | Upsert by entity key | Bucket or none on main key (e.g., `branch_code`) | Plain current-state; no history needed |
-| **State Data (SCD3)** | `stt_` | Upsert with compare-on-merge | Bucket or none on main key | Tracks current and one previous value per designated attribute; see below |
-| **Snapshot Data** | `snp_` | Append-only insert with `snapshot_date` | `days(snapshot_date)` or `months(snapshot_date)` | Point-in-time full extract; all history retained as immutable rows; use `prd_` instead when records must be mutable within a period |
-| **Period Snapshot** | `prd_` | Upsert by (entity key + `period_month`) while open; rejected after close | `months(period_month)` | Mutable within the period, immutable after period close; see period snapshot rules below |
-| **Accumulating Snapshot** | `acc_` | Upsert in-place by process entity key; milestone timestamps set once (first-write-wins) | None or `months({creation_stage}_at)` | Tracks lifecycle stage milestones on a single row; see accumulating snapshot rules below |
-| **Exploded Child** | `{parent_prefix}_{child}` | Append-only insert or upsert by (parent key + child key); written in the same pipeline step as the parent | Same as parent table | Produced by exploding a Bronze array-of-structs into child rows; parent delete must cascade; see exploded child rules below |
-| **CDC Data** | `cdc_` | Upsert; include `updated_at` in primary key | None | Retain all change records |
+| Model                                    | Silver Prefix             | Write Mode                                                                                                | Partition Strategy                                 | Notes                                                                                                                               |
+|------------------------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| **Pure Transaction** (no mutable fields) | `txn_`                    | Upsert by transaction ID                                                                                  | `hours(created_at)` or `hours(last_modified_date)` | Records are immutable once written                                                                                                  |
+| **Transaction with Update Key**          | `txn_`                    | Upsert by transaction ID + `updated_at` / `last_modified_date`                                            | `hours(created_at)`                                | Use update timestamp to resolve latest version                                                                                      |
+| **Master Data**                          | `mst_`                    | Upsert by entity key                                                                                      | None required                                      | Flat current-state table                                                                                                            |
+| **Master Data (SCD2)**                   | `mst_{name}_scd2`         | SCD2 via hash of concatenated attribute columns                                                           | `days(valid_from)`                                 | Carries `valid_from`, `valid_to`, `is_current`; see SCD2 trigger rules below                                                        |
+| **State Data**                           | `stt_`                    | Upsert by entity key                                                                                      | Bucket or none on main key (e.g., `branch_code`)   | Plain current-state; no history needed                                                                                              |
+| **State Data (SCD3)**                    | `stt_`                    | Upsert with compare-on-merge                                                                              | Bucket or none on main key                         | Tracks current and one previous value per designated attribute; see below                                                           |
+| **Snapshot Data**                        | `snp_`                    | Append-only insert with `snapshot_date`                                                                   | `days(snapshot_date)` or `months(snapshot_date)`   | Point-in-time full extract; all history retained as immutable rows; use `prd_` instead when records must be mutable within a period |
+| **Period Snapshot**                      | `prd_`                    | Upsert by (entity key + `period_month`) while open; rejected after close                                  | `months(period_month)`                             | Mutable within the period, immutable after period close; see period snapshot rules below                                            |
+| **Accumulating Snapshot**                | `acc_`                    | Upsert in-place by process entity key; milestone timestamps set once (first-write-wins)                   | None or `months({creation_stage}_at)`              | Tracks lifecycle stage milestones on a single row; see accumulating snapshot rules below                                            |
+| **Exploded Child**                       | `{parent_prefix}_{child}` | Append-only insert or upsert by (parent key + child key); written in the same pipeline step as the parent | Same as parent table                               | Produced by exploding a Bronze array-of-structs into child rows; parent delete must cascade; see exploded child rules below         |
+| **CDC Data**                             | `cdc_`                    | Upsert; include `updated_at` in primary key                                                               | None                                               | Retain all change records                                                                                                           |
 
 #### Master Data with SCD2 — Trigger Rules
 
@@ -682,12 +682,12 @@ WHEN NOT MATCHED THEN INSERT (
 
 **When to choose SCD3 over SCD2:**
 
-| | SCD2 | SCD3 |
-| --- | --- | --- |
-| History depth | Full (all versions as rows) | One previous value per column |
-| Query pattern | "Show me all states over time" | "Show me what changed most recently" |
-| Storage cost | Grows with every change | Fixed — two extra columns per tracked attr |
-| Typical use | Master data (customer, product) | State data (order status, assignment) |
+|               | SCD2                            | SCD3                                       |
+|---------------|---------------------------------|--------------------------------------------|
+| History depth | Full (all versions as rows)     | One previous value per column              |
+| Query pattern | "Show me all states over time"  | "Show me what changed most recently"       |
+| Storage cost  | Grows with every change         | Fixed — two extra columns per tracked attr |
+| Typical use   | Master data (customer, product) | State data (order status, assignment)      |
 
 > For Clustering: apply Z-order on columns matching the Gold zone's expected `JOIN`,
 > `WHERE`, and `GROUP BY` patterns. Analytics Engineers define these per use case.
@@ -1313,12 +1313,12 @@ With PIT:     fct JOIN pit_customer ON (customer_id + DATE(event_timestamp))  �
 
 **Table structure:**
 
-| Column | Type | Description |
-| --- | --- | --- |
-| `snapshot_date` | DATE | The date this PIT row was computed for; partition key |
-| `{entity_pk}` | STRING | Business key of the entity |
-| `{dim1}_sk` | STRING | Surrogate key from `dim_{dim1}_scd2` valid at `snapshot_date` |
-| `{dim2}_sk` | STRING | Surrogate key from `dim_{dim2}_scd2` valid at `snapshot_date` |
+| Column          | Type   | Description                                                   |
+|-----------------|--------|---------------------------------------------------------------|
+| `snapshot_date` | DATE   | The date this PIT row was computed for; partition key         |
+| `{entity_pk}`   | STRING | Business key of the entity                                    |
+| `{dim1}_sk`     | STRING | Surrogate key from `dim_{dim1}_scd2` valid at `snapshot_date` |
+| `{dim2}_sk`     | STRING | Surrogate key from `dim_{dim2}_scd2` valid at `snapshot_date` |
 
 **Retail examples:**
 
