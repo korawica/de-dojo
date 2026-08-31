@@ -1,4 +1,4 @@
-# Config for ETL Data for DE
+# Iceberg
 
 ---
 
@@ -26,7 +26,7 @@ spark.sql.sources.v2.bucketing.pushPartValues.enabled: true
 spark.sql.iceberg.planning.preserve-data-grouping: true
 spark.sql.sources.v2.bucketing.partiallyClusteredDistribution.enabled: true
 
-# NOTE: r7gd.4x and 12 worker nodes on r7gd.16x, totaling 4 x 12 x 16 = 768
+# NOTE: r7gd.4x and 12 worker nodes on r7gd.16x, totaling 4 x 12 x 16 = 768 cores
 spark.sql.adaptive.advisoryPartitionSizeInBytes: 1024m  # Spark partition size after AQE
 spark.sql.shuffle.partitions: 7680  # Multiple of number of cores and let AQE do its job
 ```
@@ -40,5 +40,5 @@ SET TBLPROPERTIES (
 );
 ```
 
-References:
+**References**:
 - [Turbocharging Efficiency & Slashing Costs: Mastering Spark & Iceberg Joins with Storage-Partitioned](https://medium.com/expedia-group-tech/turbocharge-efficiency-slash-costs-mastering-spark-iceberg-joins-with-storage-partitioned-join-03fdc1ff75c0)

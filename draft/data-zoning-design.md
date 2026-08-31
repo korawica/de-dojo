@@ -24,7 +24,6 @@ Both architectures coexist. The zone model accommodates either without structura
 ## Zone Flow
 
 ```text
-Data Domain:
                     ┌──────────────────────────────────────────────────────────┐
   External          │                 Standard Data Zones                      │
   Sources  ──────►  │  [Raw] ────► [Bronze] ───► [Silver] ──► [Gold]           │

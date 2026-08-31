@@ -2,7 +2,7 @@
 
 This document defines **how data moves between zones** — the patterns, rules, and steps
 that apply at each zone boundary. For zone definitions, ownership, retention, and compliance
-policies, see [Data Zoning Design](./data-zoning-design.md).
+policies, see [Data Zoning Design](../data-zoning-design.md).
 
 ---
 
@@ -22,7 +22,7 @@ classifies columns according to PCI DSS, PDPA, and GDPR scope.
 - Changes to column classification require a reviewed and approved PR.
 
 > Raw zone is the only zone where plain sensitive data may exist. All downstream zones receive
-> encrypted or masked values. See [Data Zoning Design § Compliance](./data-zoning-design.md).
+> encrypted or masked values. See [Data Zoning Design § Compliance](../data-zoning-design.md).
 
 ### Audit Column (`_dp_audit`)
 
@@ -109,12 +109,12 @@ or a join across multiple Bronze sources before Silver write.
 
 **When to use:**
 
-| Scenario | Use Staging? |
-| --- | --- |
-| Simple append or partition overwrite | No — write directly |
-| SCD2 diff (compare snapshot with previous) | Yes — stage the diff result before the MERGE |
-| SCD3 MERGE with complex CASE logic | Situational — use staging if the MERGE source needs pre-filtering |
-| Multi-source join before Silver write | Yes — join to staging first, then MERGE to Silver |
+| Scenario                                   | Use Staging?                                                      |
+|--------------------------------------------|-------------------------------------------------------------------|
+| Simple append or partition overwrite       | No — write directly                                               |
+| SCD2 diff (compare snapshot with previous) | Yes — stage the diff result before the MERGE                      |
+| SCD3 MERGE with complex CASE logic         | Situational — use staging if the MERGE source needs pre-filtering |
+| Multi-source join before Silver write      | Yes — join to staging first, then MERGE to Silver                 |
 
 ---
 
@@ -122,25 +122,25 @@ or a join across multiple Bronze sources before Silver write.
 
 Schema checks run automatically on every pipeline execution before the write step.
 
-| Change Type | Action |
-| --- | --- |
-| Add new column | **Allowed** — pipeline alerts the on-call DE before writing |
-| Safe type promotion (e.g., `STRING` → `TIMESTAMP`, `INT` → `BIGINT`) | **Allowed** |
-| Breaking type change (e.g., `INT` → `STRING`) | **Blocked** — pipeline fails; manual review required |
-| Drop existing column | **Blocked** — pipeline fails; column must be deprecated explicitly |
+| Change Type                                                          | Action                                                             |
+|----------------------------------------------------------------------|--------------------------------------------------------------------|
+| Add new column                                                       | **Allowed** — pipeline alerts the on-call DE before writing        |
+| Safe type promotion (e.g., `STRING` → `TIMESTAMP`, `INT` → `BIGINT`) | **Allowed**                                                        |
+| Breaking type change (e.g., `INT` → `STRING`)                        | **Blocked** — pipeline fails; manual review required               |
+| Drop existing column                                                 | **Blocked** — pipeline fails; column must be deprecated explicitly |
 
 ### Pipeline Idempotency
 
 Every pipeline step must be **safely re-runnable** — a second execution of the same run must
 produce the same result as the first. This is non-negotiable for reliability at retail scale.
 
-| Write Mode | Idempotent? | Why |
-| --- | --- | --- |
-| Overwrite partition (Raw→Bronze) | Yes | Re-running overwrites the same partition; no duplication |
-| Iceberg MERGE INTO (Bronze→Silver) | Yes — if MERGE key is stable | A second MERGE on the same key produces the same row state |
-| BigQuery MERGE (Silver→Gold) | Yes — if MERGE key is stable | Same reasoning as above |
-| Truncate + load (hot native tables) | Yes | Truncate guarantees a clean slate each run |
-| SCD2 insert | Conditional | Re-running after partial failure may insert a duplicate SCD2 version; use staging to pre-deduplicate the diff before the SCD2 insert |
+| Write Mode                          | Idempotent?                  | Why                                                                                                                                  |
+|-------------------------------------|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| Overwrite partition (Raw→Bronze)    | Yes                          | Re-running overwrites the same partition; no duplication                                                                             |
+| Iceberg MERGE INTO (Bronze→Silver)  | Yes — if MERGE key is stable | A second MERGE on the same key produces the same row state                                                                           |
+| BigQuery MERGE (Silver→Gold)        | Yes — if MERGE key is stable | Same reasoning as above                                                                                                              |
+| Truncate + load (hot native tables) | Yes                          | Truncate guarantees a clean slate each run                                                                                           |
+| SCD2 insert                         | Conditional                  | Re-running after partial failure may insert a duplicate SCD2 version; use staging to pre-deduplicate the diff before the SCD2 insert |
 
 **Recovery rule:** if a pipeline crashes after a partial write, the safest recovery is to
 re-run the full pipeline from the start of that `dp_partition` window — do not attempt to
@@ -154,10 +154,10 @@ completed diff or intermediate result is fully committed before the target zone 
 Every pipeline must explicitly support two modes, controlled by a `load_mode` parameter.
 Both modes use the same schema and write steps — they differ only in the source query scope.
 
-| Mode | When Used | Source Query Scope |
-| --- | --- | --- |
-| **`initial`** | First-time onboarding of a new source; full historical extract | Full table or full topic replay from earliest offset |
-| **`incremental`** | All subsequent scheduled runs | Delta only — since last successful `dp_partition` |
+| Mode              | When Used                                                      | Source Query Scope                                   |
+|-------------------|----------------------------------------------------------------|------------------------------------------------------|
+| **`initial`**     | First-time onboarding of a new source; full historical extract | Full table or full topic replay from earliest offset |
+| **`incremental`** | All subsequent scheduled runs                                  | Delta only — since last successful `dp_partition`    |
 
 **Initial load rules:**
 
@@ -177,21 +177,21 @@ Both modes use the same schema and write steps — they differ only in the sourc
 Source systems emit three CDC operation types. The ingestion pipeline must handle all three —
 ignoring `DELETE` causes deleted records to persist in Silver and Gold indefinitely.
 
-| CDC Operation | `op` Value | Handling |
-| --- | --- | --- |
-| Insert | `I` | Standard MERGE `WHEN NOT MATCHED THEN INSERT` |
-| Update | `U` | Standard MERGE `WHEN MATCHED THEN UPDATE` |
-| Hard Delete | `D` | MERGE `WHEN MATCHED THEN DELETE` — physically removes the row from the Iceberg table |
-| Soft Delete | `is_deleted = true` | MERGE `WHEN MATCHED THEN UPDATE` — sets `is_deleted = true`, `deleted_at = event_timestamp`; row is retained but excluded from all Gold queries |
+| CDC Operation  | `op` Value          | Handling                                                                                                                                        |
+|----------------|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| Insert         | `I`                 | Standard MERGE `WHEN NOT MATCHED THEN INSERT`                                                                                                   |
+| Update         | `U`                 | Standard MERGE `WHEN MATCHED THEN UPDATE`                                                                                                       |
+| Hard Delete    | `D`                 | MERGE `WHEN MATCHED THEN DELETE` — physically removes the row from the Iceberg table                                                            |
+| Soft Delete    | `is_deleted = true` | MERGE `WHEN MATCHED THEN UPDATE` — sets `is_deleted = true`, `deleted_at = event_timestamp`; row is retained but excluded from all Gold queries |
 
 **Choosing hard vs. soft delete at the Silver layer:**
 
-| | Hard Delete | Soft Delete |
-| --- | --- | --- |
-| Storage | Smaller — deleted rows removed | Larger — rows retained with flag |
-| Historical accuracy | Lost — cannot query "what existed at T" | Preserved — flag allows point-in-time queries |
-| Compliance (right-to-erasure) | Simplifies PDPA/GDPR erasure | Requires additional erasure step to nullify PII on soft-deleted rows |
-| Retail use case | Voided transactions, test orders | Cancelled orders, deactivated products, suspended accounts |
+|                               | Hard Delete                             | Soft Delete                                                          |
+|-------------------------------|-----------------------------------------|----------------------------------------------------------------------|
+| Storage                       | Smaller — deleted rows removed          | Larger — rows retained with flag                                     |
+| Historical accuracy           | Lost — cannot query "what existed at T" | Preserved — flag allows point-in-time queries                        |
+| Compliance (right-to-erasure) | Simplifies PDPA/GDPR erasure            | Requires additional erasure step to nullify PII on soft-deleted rows |
+| Retail use case               | Voided transactions, test orders        | Cancelled orders, deactivated products, suspended accounts           |
 
 **Bronze layer — preserve all operations:**
 
@@ -245,7 +245,7 @@ No transformation is applied. Data lands exactly as received.
 > **Retention:** Raw zone data is kept for **60 days** then transitioned to cold archive storage
 > automatically via a GCS lifecycle policy — no pipeline action is needed. Data beyond 60 days
 > is still retrievable from archive for reprocessing but incurs retrieval latency and cost.
-> See [Data Zoning Design § Raw](./data-zoning-design.md).
+> See [Data Zoning Design § Raw](../data-zoning-design.md).
 
 ---
 
@@ -372,7 +372,7 @@ This is the primary ingestion path for batch and Lambda Architecture pipelines.
 
 > Records that fail schema or structural checks (missing required fields, type mismatches) are routed
 > to the **Quarantine zone** and never silently dropped.
-> See [Data Zoning Design § Quarantine](./data-zoning-design.md).
+> See [Data Zoning Design § Quarantine](../data-zoning-design.md).
 
 #### Late Data Window
 
@@ -1151,7 +1151,7 @@ This step produces the consumption-ready data mart layer.
 | **One-Big-Table** | `obt_` | Pre-joined wide table optimized for direct BI consumption with no further joins |
 | **Report** | `rpt_` | Pre-aggregated summary datasets aligned to a specific report or dashboard |
 
-Use [time-window suffixes](./data-zoning-design.md) on table names where the mart represents
+Use [time-window suffixes](../data-zoning-design.md) on table names where the mart represents
 a bounded time window (e.g., `fct_sales_curr_day`, `rpt_revenue_prev_month`).
 
 #### Periodic Snapshot Fact (`fct_snp_`)
